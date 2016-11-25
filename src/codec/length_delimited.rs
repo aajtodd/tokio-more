@@ -112,10 +112,12 @@ impl<T: AsyncRead> Decoder<T> {
 
         loop {
             if self.buf.len() >= head_len {
+                // Enough data has been buffered to process the head
+                
                 // Skip the required bytes
                 self.buf.advance(self.builder.length_field_offset);
-
-                // Enough data has been buffered to process the head
+                
+                // match endianess
                 let n = match self.builder.length_field_order {
                     ByteOrder::BigEndian => {
                         self.buf.get_uint::<BigEndian>(field_len)
