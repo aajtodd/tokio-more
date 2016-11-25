@@ -37,6 +37,18 @@ pub fn decode_single_frame_one_packet() {
 }
 
 #[test]
+pub fn decode_single_frame_one_packet_le() {
+    let io = FixtureIo::empty()
+        .then_read(&b"\x09\x00\x00\x00abcdefghi"[..]);
+
+    let builder = Builder::new().set_byte_order(ByteOrder::LittleEndian);
+    let io = builder.decoder(io);
+
+    let chunks = collect(io).unwrap();
+    assert_eq!(chunks, bytes(&[b"abcdefghi"]));
+}
+
+#[test]
 pub fn decode_single_multi_frame_one_packet() {
     let mut data: Vec<u8> = vec![];
     data.extend_from_slice(b"\x00\x00\x00\x09abcdefghi");
@@ -159,6 +171,17 @@ pub fn incomplete_payload() {
     assert!(collect(io).is_err());
 }
 
+
+#[test]
+pub fn decode_max_frame_size_exceeded() {
+    let io = FixtureIo::empty()
+        .then_read(&b"\x00\x00\x00\x09abcdefghi"[..]);
+
+    let io = Builder::new().set_max_frame_length(8).decoder(io);
+
+    assert!(collect(io).is_err());
+}
+
 /*
  *
  * ===== Encoder =====
@@ -189,6 +212,20 @@ pub fn encode_single_frame_one_packet() {
 }
 
 #[test]
+pub fn encode_single_frame_one_packet_le() {
+    let mut io = FixtureIo::empty()
+        .then_write(&b"\x09\x00\x00\x00abcdefghi"[..]);
+
+    let rx = io.receiver();
+    let builder = Builder::new().set_byte_order(ByteOrder::LittleEndian);
+    let io = builder.encoder(io);
+    let io = io.send(&b"abcdefghi"[..]).wait().unwrap();
+
+    drop(io);
+    rx.recv().unwrap();
+}
+
+#[test]
 pub fn encode_single_multi_frame_one_packet() {
     let mut data: Vec<u8> = vec![];
     data.extend_from_slice(b"\x00\x00\x00\x09abcdefghi");
@@ -207,6 +244,17 @@ pub fn encode_single_multi_frame_one_packet() {
 
     drop(io);
     rx.recv().unwrap();
+}
+
+#[test]
+pub fn encode_max_frame_size_exceeded() {
+    let mut io = FixtureIo::empty()
+        .then_write(&b"\x00\x00\x00\x09abcdefghi"[..]);
+
+    let rx = io.receiver();
+    let io = Builder::new().set_max_frame_length(8).encoder(io);
+    let io = io.send(&b"abcdefghi"[..]).wait();
+    assert!(io.is_err());
 }
 
 /*

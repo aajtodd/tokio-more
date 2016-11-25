@@ -61,7 +61,7 @@ pub struct Builder {
 
 /// An enumeration of valid byte orders
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-enum ByteOrder {
+pub enum ByteOrder {
     /// Big-endian byte order.
     BigEndian,
 
@@ -463,6 +463,14 @@ impl Builder {
     /// Defaults to `length_field_len + length_field_offset`
     pub fn set_num_skip(mut self, val: usize) -> Self {
         self.num_skip = Some(val);
+        self
+    }
+
+    /// Sets the expected byte order 
+    ///
+    /// Defaults to `ByteOrder::BigEndian`
+    pub fn set_byte_order(mut self, val: ByteOrder) -> Self {
+        self.length_field_order = val;
         self
     }
 
